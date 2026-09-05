@@ -1,0 +1,30 @@
+@model SocialApp.Models.ViewModels.ConfirmEmailViewModel
+@{
+    ViewData["Title"] = Model.Heading;
+}
+
+@* Heading aur message controller decide karta hai — yahan sirf ek hi shakal ka
+   layout hai, chahe kaamyabi ho ya nakami. Sirf action button badalta hai. *@
+<div class="auth-wrap">
+    <div class="auth-card">
+        <div class="auth-head">
+            <h1>@Model.Heading</h1>
+            <p>@Model.Message</p>
+        </div>
+
+        @if (Model.Succeeded)
+        {
+            <a asp-controller="Account" asp-action="Login"
+               class="btn btn-primary btn-block">Log in</a>
+        }
+        else
+        {
+            <a asp-controller="Account" asp-action="ResendConfirmation"
+               class="btn btn-primary btn-block">Send a new link</a>
+
+            <div class="auth-alt">
+                <a asp-controller="Account" asp-action="Login">Back to log in</a>
+            </div>
+        }
+    </div>
+</div>

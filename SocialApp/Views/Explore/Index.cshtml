@@ -1,0 +1,69 @@
+@model SocialApp.Models.ViewModels.FeedViewModel
+@{
+    ViewData["Title"] = "Explore";
+}
+
+@if (TempData["Flash"] is string flash)
+{
+    <div class="alert alert-ok" role="status">@flash</div>
+}
+
+<div class="page-head">
+    <div>
+        <h1>Explore</h1>
+        @* FIX #2 — Instagram ka Explore ek black box hai. Yahan tarteeb ka
+           qanoon ek line mein likha hua hai. *@
+        <p class="page-sub">Every post on SocialApp, newest first. No algorithm.</p>
+    </div>
+
+    <div class="segmented" role="tablist" aria-label="Feed filter">
+        <a class="segmented-item" role="tab" aria-selected="false"
+           asp-controller="Home" asp-action="Index">Following</a>
+        <a class="segmented-item is-active" role="tab" aria-selected="true"
+           asp-controller="Explore" asp-action="Index">Explore</a>
+    </div>
+</div>
+
+@if (Model.IsEmpty)
+{
+    <div class="empty">
+        <p class="empty-title">Nothing here yet</p>
+        <p class="empty-text">No one has posted anything. Be the first.</p>
+        <a class="btn btn-primary" asp-controller="Home" asp-action="Index" asp-fragment="composer">
+            Write a post
+        </a>
+    </div>
+}
+else
+{
+    <div class="feed">
+        @foreach (var post in Model.Posts)
+        {
+            <partial name="_Post" model="post" />
+        }
+    </div>
+
+    @if (Model.HasOlder || Model.HasNewer)
+    {
+        <nav class="pager" aria-label="Explore pages">
+            @if (Model.HasNewer)
+            {
+                <a class="btn btn-ghost btn-sm" asp-controller="Explore" asp-action="Index"
+                   asp-route-page="@(Model.Page - 1)">← Newer</a>
+            }
+
+            <span class="pager-pos nums">Page @Model.Page</span>
+
+            @if (Model.HasOlder)
+            {
+                <a class="btn btn-ghost btn-sm" asp-controller="Explore" asp-action="Index"
+                   asp-route-page="@(Model.Page + 1)">Older →</a>
+            }
+        </nav>
+    }
+
+    @if (!Model.HasOlder)
+    {
+        <div class="feed-end">That's everything</div>
+    }
+}

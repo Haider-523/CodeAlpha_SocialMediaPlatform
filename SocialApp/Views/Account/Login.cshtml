@@ -1,0 +1,62 @@
+@model SocialApp.Models.ViewModels.LoginViewModel
+@{
+    ViewData["Title"] = "Log in";
+}
+
+<div class="auth-wrap">
+    <div class="auth-card">
+        <div class="auth-head">
+            <h1>Welcome back</h1>
+            <p>Log in to see your feed.</p>
+        </div>
+
+        <form asp-controller="Account" asp-action="Login" method="post"
+              asp-route-returnUrl="@ViewData["ReturnUrl"]" novalidate>
+
+            <div asp-validation-summary="ModelOnly" class="alert alert-error" role="alert"></div>
+
+            @* Controller ye flag sirf tab set karta hai jab password SAHI tha magar
+               email confirm nahi hui — yani hum jante hain ke banda isi account ka
+               malik hai. Ajnabi ko ye link kabhi nazar nahi aata. *@
+            @if (ViewData["ShowResend"] as bool? == true)
+            {
+                <p class="small" style="margin:-8px 0 16px;">
+                    <a asp-controller="Account" asp-action="ResendConfirmation">Send the confirmation link again</a>
+                </p>
+            }
+
+            <div class="field">
+                <label class="label" asp-for="Email"></label>
+                <input class="input" asp-for="Email" type="email" autocomplete="email"
+                       placeholder="you@example.com" spellcheck="false" />
+                <span class="field-error" asp-validation-for="Email"></span>
+            </div>
+
+            <div class="field">
+                <label class="label" asp-for="Password"></label>
+                <input class="input" asp-for="Password" type="password"
+                       autocomplete="current-password" placeholder="Your password" />
+                <span class="field-error" asp-validation-for="Password"></span>
+            </div>
+
+            <div class="field">
+                <label class="check-row">
+                    <input asp-for="RememberMe" type="checkbox" />
+                    <span>@Html.DisplayNameFor(m => m.RememberMe)</span>
+                </label>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block">Log in</button>
+        </form>
+
+        <div class="auth-alt">
+            New here?
+            <a asp-controller="Account" asp-action="Register">Create an account</a>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <partial name="_ValidationScriptsPartial" />
+}

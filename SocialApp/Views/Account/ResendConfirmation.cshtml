@@ -1,0 +1,67 @@
+@model SocialApp.Models.ViewModels.ResendConfirmationViewModel
+@{
+    ViewData["Title"] = "Resend confirmation";
+    var sent = ViewData["Sent"] as bool? ?? false;
+    var devError = ViewData["DevEmailError"] as string;
+    var devUrl = ViewData["DevConfirmUrl"] as string;
+}
+
+<div class="auth-wrap">
+    <div class="auth-card">
+        <div class="auth-head">
+            <h1>Resend confirmation</h1>
+            <p>Enter the email you signed up with and we'll send a fresh link.</p>
+        </div>
+
+        @if (sent)
+        {
+            @* SECURITY: wording jaan-boojh kar "if that address has..." hai.
+               "Sent!" kehna is form ko email-checker bana deta — koi bhi pata
+               kar sakta ke kaun SocialApp par registered hai. *@
+            <div class="alert alert-ok" role="status">
+                If that address has an unconfirmed account, a new link is on its way.
+            </div>
+        }
+
+        @if (devError is not null)
+        {
+            <div class="dev-note">
+                <span class="dev-note-tag">Dev only</span>
+                <strong>SMTP failed</strong>
+                <code>@devError</code>
+            </div>
+        }
+
+        @if (devUrl is not null)
+        {
+            <div class="dev-note">
+                <span class="dev-note-tag">Dev only</span>
+                <strong>Confirmation link</strong>
+                <a href="@devUrl">Confirm this account now</a>
+            </div>
+        }
+
+        <form asp-controller="Account" asp-action="ResendConfirmation" method="post" novalidate>
+
+            <div asp-validation-summary="ModelOnly" class="alert alert-error" role="alert"></div>
+
+            <div class="field">
+                <label class="label" asp-for="Email"></label>
+                <input class="input" asp-for="Email" type="email" autocomplete="email"
+                       placeholder="you@example.com" spellcheck="false" />
+                <span class="field-error" asp-validation-for="Email"></span>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block">Send link</button>
+        </form>
+
+        <div class="auth-alt">
+            <a asp-controller="Account" asp-action="Login">Back to log in</a>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <partial name="_ValidationScriptsPartial" />
+}

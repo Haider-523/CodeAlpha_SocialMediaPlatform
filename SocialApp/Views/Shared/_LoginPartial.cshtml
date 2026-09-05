@@ -1,0 +1,42 @@
+@*
+    Auth-aware sidebar footer.
+      - Signed in  → avatar + naam + Log out
+      - Signed out → Log in / Create account
+    Profile controller Step 5 mein banega; woh link filhaal placeholder hai.
+*@
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+
+@if (SignInManager.IsSignedIn(User))
+{
+    var me = await UserManager.GetUserAsync(User);
+    var display = me?.DisplayName ?? User.Identity?.Name ?? "You";
+    var initial = string.IsNullOrWhiteSpace(display) ? "?" : display.Trim()[..1].ToUpperInvariant();
+
+    <div class="row" style="padding:6px 8px;">
+        <span class="avatar avatar-sm" aria-hidden="true">
+            @if (!string.IsNullOrEmpty(me?.AvatarUrl))
+            {
+                <img src="@me!.AvatarUrl" alt="" />
+            }
+            else
+            {
+                @initial
+            }
+        </span>
+        <span class="post-ident">
+            <a class="post-name" asp-controller="Profile" asp-action="Me">@display</a>
+            <span class="post-meta">@@@(me?.UserName)</span>
+        </span>
+    </div>
+
+    @* Logout POST hai (GET nahi) — form tag helper khud antiforgery token lagata hai. *@
+    <form asp-controller="Account" asp-action="Logout" method="post">
+        <button type="submit" class="btn btn-ghost btn-block btn-sm">Log out</button>
+    </form>
+}
+else
+{
+    <a class="btn btn-primary btn-block" asp-controller="Account" asp-action="Login">Log in</a>
+    <a class="btn btn-ghost btn-block" asp-controller="Account" asp-action="Register">Create account</a>
+}

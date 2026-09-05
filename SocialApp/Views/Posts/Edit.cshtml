@@ -1,0 +1,77 @@
+@model SocialApp.Models.ViewModels.EditPostViewModel
+@{
+    ViewData["Title"] = "Edit post";
+    var cancelUrl = string.IsNullOrEmpty(Model.ReturnUrl)
+        ? Url.Action("Details", "Posts", new { id = Model.Id })
+        : Model.ReturnUrl;
+}
+
+<div class="page-head">
+    <div>
+        <a class="back-link" href="@cancelUrl">
+            ← Cancel
+        </a>
+        <h1>Edit post</h1>
+        <p class="page-sub">Update your post content or change attached media</p>
+    </div>
+</div>
+
+<form asp-controller="Posts" asp-action="Edit" asp-route-id="@Model.Id"
+      method="post" enctype="multipart/form-data" class="card edit-card">
+    @Html.AntiForgeryToken()
+
+    <div asp-validation-summary="ModelOnly" class="alert alert-error" role="alert"></div>
+
+    <input type="hidden" asp-for="Id" />
+    <input type="hidden" asp-for="ReturnUrl" />
+    <input type="hidden" asp-for="CurrentImageUrl" />
+    <input type="hidden" asp-for="ImageWidth" />
+    <input type="hidden" asp-for="ImageHeight" />
+
+    <div class="field">
+        <div class="row-between">
+            <label class="label" for="editContent">Post Content</label>
+            <span class="char-count nums" data-count-for="editContent">500</span>
+        </div>
+        <textarea id="editContent" name="Content" class="textarea edit-textarea" maxlength="500" required
+                  placeholder="What's on your mind?">@Model.Content</textarea>
+        <span asp-validation-for="Content" class="field-error"></span>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.CurrentImageUrl))
+    {
+        <div class="edit-image-block">
+            <label class="label">Current Image</label>
+            <div class="edit-image-preview" style="aspect-ratio: @Model.ImageAspectRatio">
+                <img src="@Model.CurrentImageUrl" alt="Current image attached to this post" />
+            </div>
+
+            <label class="check-row edit-remove-check">
+                <input type="checkbox" asp-for="RemoveImage" />
+                <span>Remove current image</span>
+            </label>
+        </div>
+    }
+
+    <div class="field edit-upload-field">
+        <label class="label" for="NewImage">
+            @(string.IsNullOrEmpty(Model.CurrentImageUrl) ? "Attach an image (optional)" : "Replace with a new image (optional)")
+        </label>
+        <input type="file" id="NewImage" name="NewImage" class="input input-file"
+               accept="image/jpeg,image/png,image/webp,image/gif"
+               data-preview-for="newImagePreview" />
+        <span asp-validation-for="NewImage" class="field-error"></span>
+
+        <div class="composer-preview edit-new-preview" id="newImagePreview" hidden>
+            <img alt="Preview of newly chosen image" />
+            <button type="button" class="btn btn-quiet btn-sm" data-preview-clear="newImagePreview">
+                Remove new image
+            </button>
+        </div>
+    </div>
+
+    <div class="edit-card-foot">
+        <a class="btn btn-ghost" href="@cancelUrl">Cancel</a>
+        <button type="submit" class="btn btn-primary">Save changes</button>
+    </div>
+</form>

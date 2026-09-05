@@ -1,49 +1,99 @@
-﻿<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - SocialApp</title>
-    <script type="importmap"></script>
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+
+    @* No-flash theme: saved choice ko page paint hone se PEHLE apply karo,
+       warna dark mode par reload karte waqt safed flash aata hai. *@
+    <script>
+        (function () {
+            try {
+                var saved = localStorage.getItem("theme");
+                var prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+                document.documentElement.setAttribute("data-theme", saved || (prefersDark ? "dark" : "light"));
+            } catch (e) { /* localStorage blocked — light par reh jao */ }
+        })();
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/SocialApp.styles.css" asp-append-version="true" />
+    @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">SocialApp</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
+    @* Keyboard users ko nav skip karke seedha content par jaane deta hai *@
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <div class="app-shell">
+
+        @* ═══════════ LEFT COLUMN: navigation rail ═══════════ *@
+        <aside class="sidebar" aria-label="Primary">
+            <a class="brand" asp-controller="Home" asp-action="Index">
+                <span class="brand-mark" aria-hidden="true">●</span>
+                <span class="brand-name">SocialApp</span>
+            </a>
+
+            <nav class="nav-rail" aria-label="Main navigation">
+                <a class="nav-item" asp-controller="Home" asp-action="Index">
+                    <span class="nav-ico" aria-hidden="true">⌂</span>
+                    <span class="nav-label">Home</span>
+                </a>
+
+                <a class="nav-item" asp-controller="Explore" asp-action="Index">
+                    <span class="nav-ico" aria-hidden="true">◎</span>
+                    <span class="nav-label">Explore</span>
+                </a>
+
+                <a class="nav-item" asp-controller="Search" asp-action="Index" data-match="/search">
+                    <span class="nav-ico" aria-hidden="true">⌕</span>
+                    <span class="nav-label">Search</span>
+                </a>
+
+                <a class="nav-item" asp-controller="Profile" asp-action="Me" data-match="/u/">
+                    <span class="nav-ico" aria-hidden="true">◐</span>
+                    <span class="nav-label">Profile</span>
+                </a>
+            </nav>
+
+            @* Modal ki zaroorat nahi: composer Home par pehle se maujood hai, ye
+               link wahan le ja kar usay focus kar deta hai (dekho site.js). *@
+            <a class="btn btn-primary btn-compose" asp-controller="Home" asp-action="Index"
+               asp-fragment="composer">
+                <span aria-hidden="true">＋</span> New post
+            </a>
+
+            <div class="sidebar-foot">
+                <button type="button" class="theme-toggle" id="themeToggle"
+                        aria-label="Switch between light and dark theme">
+                    <span class="theme-toggle-track" aria-hidden="true">
+                        <span class="theme-toggle-thumb"></span>
+                    </span>
+                    <span class="theme-toggle-label" id="themeToggleLabel">Dark</span>
                 </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
-                    </ul>
-                </div>
+
+                <partial name="_LoginPartial" />
             </div>
-        </nav>
-    </header>
-    <div class="container">
-        <main role="main" class="pb-3">
+        </aside>
+
+        @* ═══════════ RIGHT COLUMN: page content ═══════════ *@
+        <main id="main" class="content">
             @RenderBody()
         </main>
     </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2026 - SocialApp - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-        </div>
-    </footer>
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    @* Mobile-only bottom bar — thumb ke qareeb, top par nahi *@
+    <nav class="mobile-bar" aria-label="Mobile navigation">
+        <a class="mobile-item" asp-controller="Home" asp-action="Index" aria-label="Home"><span aria-hidden="true">⌂</span></a>
+        <a class="mobile-item" asp-controller="Explore" asp-action="Index" aria-label="Explore"><span aria-hidden="true">◎</span></a>
+        <a class="mobile-item" asp-controller="Search" asp-action="Index" data-match="/search" aria-label="Search"><span aria-hidden="true">⌕</span></a>
+        <a class="mobile-item mobile-compose" asp-controller="Home" asp-action="Index" asp-fragment="composer" aria-label="New post"><span aria-hidden="true">＋</span></a>
+        <a class="mobile-item" asp-controller="Profile" asp-action="Me" data-match="/u/" aria-label="Profile"><span aria-hidden="true">◐</span></a>
+    </nav>
+
     <script src="~/js/site.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>

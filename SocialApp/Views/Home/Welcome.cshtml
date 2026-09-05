@@ -1,0 +1,25 @@
+@{
+    ViewData["Title"] = "Welcome";
+}
+
+@* Logged-out banda / par aaye to seedha login page par phenkna rukha lagta hai.
+   Isse pehle ek chhoti si baat ho jati hai. *@
+
+<div class="page-head">
+    <div>
+        <h1>A calmer social feed</h1>
+        <p class="page-sub">Chronological. No algorithm. No infinite scroll.</p>
+    </div>
+</div>
+
+<section class="card stack">
+    <p class="muted">
+        SocialApp posts ko waqt ke hisaab se dikhata hai — jo pehle hua, wo pehle.
+        Feed khatam hota hai, aur khatam hone par batata hai.
+    </p>
+
+    <div class="row">
+        <a class="btn btn-primary" asp-controller="Account" asp-action="Register">Create account</a>
+        <a class="btn btn-ghost" asp-controller="Account" asp-action="Login">Log in</a>
+    </div>
+</section>

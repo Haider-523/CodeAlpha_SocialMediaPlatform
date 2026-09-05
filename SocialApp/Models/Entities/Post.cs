@@ -16,9 +16,19 @@ public class Post
     [MaxLength(500)]
     public string Content { get; set; } = string.Empty;
 
-    /// <summary>Relative path of the uploaded image, e.g. /uploads/posts/abc.jpg</summary>
+    /// <summary>Relative path of the uploaded image, e.g. /uploads/posts/abc.webp</summary>
     [MaxLength(300)]
     public string? ImageUrl { get; set; }
+
+    /// <summary>
+    /// Saved image ki naap (pixels). Ye jaan bujh kar DB mein rakhi hai: view
+    /// isse &lt;img width/height&gt; aur CSS aspect-ratio bharta hai, jis se image
+    /// load hote waqt feed hilta nahi. Naap ke bina jagah reserve karna namumkin
+    /// hai — Facebook ke feed ka mashhoor "jumping" masla yehi hai.
+    /// Null = post par koi image nahi (ya purani post jo dimensions se pehle bani).
+    /// </summary>
+    public int? ImageWidth { get; set; }
+    public int? ImageHeight { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

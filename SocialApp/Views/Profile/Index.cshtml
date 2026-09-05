@@ -1,0 +1,125 @@
+@model SocialApp.Models.ViewModels.ProfileViewModel
+
+@if (TempData["Flash"] is string flash)
+{
+    <div class="alert alert-ok" role="status">@flash</div>
+}
+
+<section class="card profile-head" aria-labelledby="profileName">
+
+    <div class="profile-top">
+        <span class="avatar avatar-lg" aria-hidden="true">
+            @if (!string.IsNullOrEmpty(Model.AvatarUrl))
+            {
+                @* width/height attributes layout shift rokte hain — CSS load hone se
+                   pehle bhi browser jagah reserve kar leta hai. *@
+                <img src="@Model.AvatarUrl" alt="" width="88" height="88" />
+            }
+            else
+            {
+                @Model.Initial
+            }
+        </span>
+
+        <div class="profile-ident">
+            <h1 id="profileName">@Model.DisplayName</h1>
+            <p class="profile-handle">
+                <span>@@@(Model.UserName)</span>
+                <span aria-hidden="true">·</span>
+                <span>Joined @Model.JoinedAt.ToString("MMMM yyyy")</span>
+            </p>
+        </div>
+
+        <div class="profile-cta">
+            @if (Model.IsMe)
+            {
+                <a class="btn btn-ghost" asp-controller="Profile" asp-action="Edit">Edit profile</a>
+            }
+            else
+            {
+                @* Ek hi toggle form. Label "Following" hai, "Unfollow" nahi —
+                   button par wo likhna jo hone wala hai, jab tak hover na ho,
+                   user ko current state ka pata nahi chalne deta (X ki galti).
+                   Hover/focus par CSS text ko "Unfollow" kar deta hai. *@
+                <form asp-controller="Follow" asp-action="Toggle" method="post" data-follow-form>
+                    <input type="hidden" name="username" value="@Model.UserName" />
+                    <input type="hidden" name="returnUrl" value="@ViewContext.HttpContext.Request.Path" />
+
+                    <button type="submit"
+                            class="btn btn-follow @(Model.IsFollowing ? "is-following" : "btn-primary")"
+                            aria-pressed="@(Model.IsFollowing ? "true" : "false")">
+                        <span data-follow-label>@(Model.IsFollowing ? "Following" : "Follow")</span>
+                    </button>
+                </form>
+            }
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Model.Bio))
+    {
+        <p class="profile-bio">@Model.Bio</p>
+    }
+
+    @* FIX #8 — Instagram/X counts ko bara aur bold dikhate hain, jis se profile
+       scoreboard ban jata hai. Yahan number aur label barabar wazan ke hain. *@
+    <dl class="profile-stats">
+        <div class="stat">
+            <dt>Posts</dt>
+            <dd class="nums">@Model.PostCount</dd>
+        </div>
+        <div class="stat">
+            <a asp-controller="Profile" asp-action="Followers" asp-route-username="@Model.UserName"
+               class="stat-link" aria-label="@Model.FollowerCount followers">
+                <dt>Followers</dt>
+                <dd class="nums"><span data-follower-count>@Model.FollowerCount</span></dd>
+            </a>
+        </div>
+        <div class="stat">
+            <a asp-controller="Profile" asp-action="Following" asp-route-username="@Model.UserName"
+               class="stat-link" aria-label="@Model.FollowingCount following">
+                <dt>Following</dt>
+                <dd class="nums">@Model.FollowingCount</dd>
+            </a>
+        </div>
+    </dl>
+</section>
+
+@if (Model.Posts.Count == 0)
+{
+    <div class="empty">
+        <p class="empty-title">
+            @(Model.IsMe ? "You haven't posted yet" : $"{Model.DisplayName} hasn't posted yet")
+        </p>
+        <p class="empty-text">
+            @(Model.IsMe
+                ? "Your posts will show up here once you write your first one."
+                : "When they post something, it'll show up here.")
+        </p>
+        @if (Model.IsMe)
+        {
+            <a class="btn btn-primary" asp-controller="Home" asp-action="Index" asp-fragment="composer">
+                Write your first post
+            </a>
+        }
+    </div>
+}
+else
+{
+    <div class="feed">
+        @foreach (var post in Model.Posts)
+        {
+            <partial name="_Post" model="post" />
+        }
+    </div>
+
+    @* Profile par sirf 20 latest posts aati hain. Agar count 20 se zyada hai to
+       user ko jhoot nahi bolna — saaf batao ke ye poori list nahi hai. *@
+    @if (Model.PostCount > Model.Posts.Count)
+    {
+        <div class="feed-end">Showing the latest @Model.Posts.Count of @Model.PostCount posts</div>
+    }
+    else
+    {
+        <div class="feed-end">That's all of them</div>
+    }
+}

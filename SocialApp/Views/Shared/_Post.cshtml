@@ -1,0 +1,137 @@
+@model SocialApp.Models.ViewModels.PostViewModel
+
+@*
+    Ek post card. Home, Explore aur Profile — teenon isi partial ko use karte
+    hain, is liye post ki shakl kabhi teen jagah alag nahi ho sakti.
+
+    returnUrl: delete ke baad user wahin wapas aata hai jahan se delete kiya.
+*@
+@{
+    var path = ViewContext.HttpContext.Request.Path.Value;
+    var returnUrl = ViewContext.HttpContext.Request.Path + ViewContext.HttpContext.Request.QueryString;
+
+    // Post ke APNE page (/p/12) se delete karne ka case: returnUrl wahi page hota
+    // hai, magar post ab mojood nahi — user ko delete kamyab hone ke baad 404
+    // milta. Aise mauqe par returnUrl khali bhejte hain, controller khud feed par
+    // le jata hai. Url.Action se compare kar rahe hain (hard-coded "/p/" se nahi)
+    // taake route badalne par ye khud sahi rahe.
+    var permalink = Url.Action("Details", "Posts", new { id = Model.Id });
+    var deleteReturnUrl = string.Equals(path, permalink, StringComparison.OrdinalIgnoreCase)
+        ? ""
+        : returnUrl;
+
+    var likeTitle = Model.IsLikedByMe ? "Unlike this post" : "Like this post";
+    var commentTitle = Model.CommentCount == 1 ? "1 comment" : $"{Model.CommentCount} comments";
+}
+
+<article class="post" id="post-@Model.Id">
+    <header class="post-head">
+        <a class="avatar" asp-controller="Profile" asp-action="Index"
+           asp-route-username="@Model.AuthorUserName"
+           aria-label="@Model.AuthorDisplayName's profile">
+            @if (!string.IsNullOrEmpty(Model.AuthorAvatarUrl))
+            {
+                <img src="@Model.AuthorAvatarUrl" alt="" width="44" height="44" loading="lazy" />
+            }
+            else
+            {
+                <span aria-hidden="true">@Model.AuthorInitial</span>
+            }
+        </a>
+
+        <div class="post-ident">
+            <a class="post-name" asp-controller="Profile" asp-action="Index"
+               asp-route-username="@Model.AuthorUserName">@Model.AuthorDisplayName</a>
+
+            <div class="post-meta">
+                <span>@@@(Model.AuthorUserName)</span>
+                <span aria-hidden="true">·</span>
+                @* Waqt par click karne se post ka apna page khulta hai. Ye web ka
+                   purana muhawra hai (X, blogs, Reddit) aur post ka link nikalne
+                   ka sabse aasan tareeqa — Instagram web par ye ab bhi nahi hai. *@
+                <a class="post-permalink" asp-controller="Posts" asp-action="Details"
+                   asp-route-id="@Model.Id">
+                    @* data-utc: site.js title ko browser ke local timezone mein badal deta hai *@
+                    <time class="post-time" datetime="@Model.IsoTime"
+                          data-utc="@Model.IsoTime" title="@Model.ExactTime">@Model.RelativeTime</time>
+                </a>
+
+                @if (Model.WasEdited)
+                {
+                    <span aria-hidden="true">·</span>
+                    <span class="post-edited">edited</span>
+                }
+            </div>
+        </div>
+
+        @if (Model.IsMine)
+        {
+            @* <details> = native dropdown. Keyboard aur screen reader ise bina
+               kisi JS ke sahi handle karte hain; site.js sirf "bahar click karo
+               to band ho jaye" add karta hai. *@
+            <details class="post-menu push" data-menu>
+                <summary class="btn btn-quiet btn-sm" aria-label="Post options">
+                    <span aria-hidden="true">···</span>
+                </summary>
+
+                <div class="menu-panel" role="group" aria-label="Post options">
+                    <a class="menu-item" asp-controller="Posts" asp-action="Edit" asp-route-id="@Model.Id" asp-route-returnUrl="@returnUrl">
+                        <span aria-hidden="true">✎</span> Edit post
+                    </a>
+                    <form asp-controller="Posts" asp-action="Delete" method="post">
+                        <input type="hidden" name="id" value="@Model.Id" />
+                        <input type="hidden" name="returnUrl" value="@deleteReturnUrl" />
+                        <button type="submit" class="menu-item is-danger"
+                                data-confirm="Delete this post? This can't be undone.">
+                            <span aria-hidden="true">🗑</span> Delete post
+                        </button>
+                    </form>
+                </div>
+            </details>
+        }
+    </header>
+
+    <div class="post-body">@Model.Content</div>
+
+    @if (!string.IsNullOrEmpty(Model.ImageUrl))
+    {
+        @* FIX #5 — Facebook ka feed image load hone par hilta hai. Yahan asli
+           naap DB mein mojood hai, is liye browser theek utni jagah pehle se
+           reserve kar leta hai: zero layout shift. *@
+        <div class="post-media" style="aspect-ratio: @Model.ImageAspectRatio">
+            <img src="@Model.ImageUrl" alt="Image attached to this post"
+                 width="@Model.ImageWidth" height="@Model.ImageHeight"
+                 loading="lazy" decoding="async" />
+        </div>
+    }
+
+    <div class="post-actions">
+        @* Like ek asli form hai, button nahi jo JS ka intezaar kare. JS chalu ho
+           to site.js isse rok kar fetch se bhejta hai (page reload nahi hota);
+           JS band ho to yehi form normally POST ho jata hai aur like phir bhi
+           lag jati hai. Feature JavaScript par depend nahi karta. *@
+        <form class="action-form" asp-controller="Likes" asp-action="Toggle" method="post"
+              data-like-form>
+            <input type="hidden" name="postId" value="@Model.Id" />
+            <input type="hidden" name="returnUrl" value="@returnUrl" />
+
+            <button type="submit" class="action action-like @(Model.IsLikedByMe ? "is-liked" : "")"
+                    aria-pressed="@(Model.IsLikedByMe ? "true" : "false")"
+                    title="@likeTitle">
+                <span aria-hidden="true" data-like-icon>@(Model.IsLikedByMe ? "♥" : "♡")</span>
+                <span class="action-count nums" data-like-count>@Model.LikeCount</span>
+                <span class="sr-only">likes</span>
+            </button>
+        </form>
+
+        @* Comment ka button post ke apne page par le jata hai (/p/12). Feed ke
+           andar comments kholne se HTML bhaari ho jata hai aur post ka koi
+           share-able link nahi banta. *@
+        <a class="action" asp-controller="Posts" asp-action="Details" asp-route-id="@Model.Id"
+           title="@commentTitle">
+            <span aria-hidden="true">💬</span>
+            <span class="action-count nums">@Model.CommentCount</span>
+            <span class="sr-only">comments</span>
+        </a>
+    </div>
+</article>

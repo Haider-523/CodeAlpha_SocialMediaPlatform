@@ -1,8 +1,124 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+@model SocialApp.Models.ViewModels.FeedViewModel
+@{
+    ViewData["Title"] = "Home";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+@*
+    FIX #1 — Instagram/Facebook ka feed algorithm ke hisaab se lagta hai aur
+    kabhi khatam nahi hota. Ye feed sirf waqt ke hisaab se hai, ek page par 10
+    posts, aur saaf batata hai ke khatam ho gaya.
+*@
+
+@if (TempData["Flash"] is string flash)
+{
+    <div class="alert alert-ok" role="status">@flash</div>
+}
+
+<div class="page-head">
+    <div>
+        <h1>Home</h1>
+        <p class="page-sub">Posts from people you follow — newest first.</p>
+    </div>
+
+    <div class="segmented" role="tablist" aria-label="Feed filter">
+        <a class="segmented-item is-active" role="tab" aria-selected="true"
+           asp-controller="Home" asp-action="Index">Following</a>
+        <a class="segmented-item" role="tab" aria-selected="false"
+           asp-controller="Explore" asp-action="Index">Explore</a>
+    </div>
 </div>
+
+@* ── Composer ──
+   Field names Content / Image hain (Composer.Content nahi) taake PostsController
+   ka CreatePostViewModel seedha bind ho jaye. Isi wajah se validation messages
+   Html.ValidationMessage se aa rahe hain — ModelState ki keys bhi wahi hain. *@
+<form class="composer" id="composer" asp-controller="Posts" asp-action="Create"
+      method="post" enctype="multipart/form-data">
+
+    <span class="avatar" aria-hidden="true">
+        @if (!string.IsNullOrEmpty(Model.MyAvatarUrl))
+        {
+            <img src="@Model.MyAvatarUrl" alt="" width="44" height="44" />
+        }
+        else
+        {
+            @Model.MyInitial
+        }
+    </span>
+
+    <div class="composer-body">
+        <label class="sr-only" for="Content">Write a post</label>
+        <textarea id="Content" name="Content" class="composer-input" maxlength="500" required
+                  placeholder="What's on your mind, @Model.MyFirstName?">@Model.Composer?.Content</textarea>
+
+        @Html.ValidationMessage("Content", new { @class = "field-error" })
+
+        <div class="composer-preview" id="composerPreview" hidden>
+            <img id="composerPreviewImg" alt="Preview of the image you selected" />
+            <button type="button" class="btn btn-quiet btn-sm" data-preview-clear="composerPreview">
+                Remove image
+            </button>
+        </div>
+
+        @Html.ValidationMessage("Image", new { @class = "field-error" })
+
+        <div class="composer-foot">
+            @* File input sr-only hai aur label uska trigger — is tarah button
+               design system jaisa dikhta hai magar keyboard/screen reader ke liye
+               asli file input hi rehta hai. *@
+            <label class="composer-attach" for="Image">
+                <span aria-hidden="true">🖼</span>
+                <span>Add image</span>
+            </label>
+            <input class="sr-only" type="file" id="Image" name="Image"
+                   accept="image/jpeg,image/png,image/webp" data-preview-for="composerPreview" />
+
+            <span class="char-count" data-count-for="Content">500</span>
+            <button type="submit" class="btn btn-primary btn-sm">Post</button>
+        </div>
+    </div>
+</form>
+
+@if (Model.IsEmpty)
+{
+    <div class="empty">
+        <p class="empty-title">Your feed is quiet</p>
+        <p class="empty-text">
+            Write your first post above, or find people to follow on Explore.
+        </p>
+        <a class="btn btn-ghost" asp-controller="Explore" asp-action="Index">Go to Explore</a>
+    </div>
+}
+else
+{
+    <div class="feed">
+        @foreach (var post in Model.Posts)
+        {
+            <partial name="_Post" model="post" />
+        }
+    </div>
+
+    @if (Model.HasOlder || Model.HasNewer)
+    {
+        <nav class="pager" aria-label="Feed pages">
+            @if (Model.HasNewer)
+            {
+                <a class="btn btn-ghost btn-sm" asp-controller="Home" asp-action="Index"
+                   asp-route-page="@(Model.Page - 1)">← Newer</a>
+            }
+
+            <span class="pager-pos nums">Page @Model.Page</span>
+
+            @if (Model.HasOlder)
+            {
+                <a class="btn btn-ghost btn-sm" asp-controller="Home" asp-action="Index"
+                   asp-route-page="@(Model.Page + 1)">Older →</a>
+            }
+        </nav>
+    }
+
+    @if (!Model.HasOlder)
+    {
+        <div class="feed-end">You're all caught up</div>
+    }
+}

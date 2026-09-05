@@ -480,3 +480,13 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# User-uploaded images — runtime data, code nahi. Repo mein nahi jani chahiye.
+SocialApp/wwwroot/uploads/
+
+# Local dev launcher (Smart App Control workaround) — sirf is machine ke liye
+SocialApp/run.ps1
+SocialApp/Directory.Build.props
+
+# Internal handoff notes
+HANDOFF-PROMPT.md

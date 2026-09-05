@@ -1,0 +1,176 @@
+@model SocialApp.Models.ViewModels.SearchViewModel
+@{
+    ViewData["Title"] = string.IsNullOrWhiteSpace(Model.Query) ? "Search" : $"Search: {Model.Query}";
+}
+
+@if (TempData["Flash"] is string flash)
+{
+    <div class="alert alert-ok" role="status">@flash</div>
+}
+
+<div class="page-head search-head">
+    <div>
+        <h1>Search</h1>
+        <p class="page-sub">Find people and posts across SocialApp</p>
+    </div>
+</div>
+
+@* Search form: GET request taake search results shareable aur linkable hon *@
+<form method="get" asp-controller="Search" asp-action="Index" class="search-form" role="search">
+    <input type="hidden" name="tab" value="@Model.Tab" />
+    <div class="search-bar">
+        <span class="search-ico" aria-hidden="true">⌕</span>
+        <input type="search"
+               name="q"
+               value="@Model.Query"
+               placeholder="Search by name, @@username, or keywords..."
+               class="search-input"
+               aria-label="Search keywords"
+               autocomplete="off"
+               autofocus />
+        <button type="submit" class="btn btn-primary btn-sm search-btn">
+            Search
+        </button>
+    </div>
+</form>
+
+@if (Model.HasSearched)
+{
+    <div class="segmented search-tabs" role="tablist" aria-label="Search filter">
+        <a class="segmented-item @(Model.IsPeopleTab ? "is-active" : "")" role="tab"
+           aria-selected="@(Model.IsPeopleTab ? "true" : "false")"
+           asp-controller="Search" asp-action="Index"
+           asp-route-q="@Model.Query" asp-route-tab="people">
+            People <span class="nums">(@Model.PeopleCount)</span>
+        </a>
+        <a class="segmented-item @(Model.IsPostsTab ? "is-active" : "")" role="tab"
+           aria-selected="@(Model.IsPostsTab ? "true" : "false")"
+           asp-controller="Search" asp-action="Index"
+           asp-route-q="@Model.Query" asp-route-tab="posts">
+            Posts <span class="nums">(@Model.PostsCount)</span>
+        </a>
+    </div>
+
+    @if (Model.IsPeopleTab)
+    {
+        @if (Model.Users.Count == 0)
+        {
+            <div class="empty">
+                <p class="empty-title">No people found</p>
+                <p class="empty-text">No user accounts matched "@Model.Query". Try searching with another name or username.</p>
+            </div>
+        }
+        else
+        {
+            <div class="user-cards">
+                @foreach (var user in Model.Users)
+                {
+                    <div class="card user-card">
+                        <div class="user-card-main">
+                            <a class="avatar avatar-md" asp-controller="Profile" asp-action="Index" asp-route-username="@user.UserName" aria-hidden="true">
+                                @if (!string.IsNullOrEmpty(user.AvatarUrl))
+                                {
+                                    <img src="@user.AvatarUrl" alt="" width="44" height="44" />
+                                }
+                                else
+                                {
+                                    @user.Initial
+                                }
+                            </a>
+
+                            <div class="user-card-info">
+                                <a class="user-card-name" asp-controller="Profile" asp-action="Index" asp-route-username="@user.UserName">
+                                    @user.DisplayName
+                                </a>
+                                <p class="user-card-handle">
+                                    <span>@@@(user.UserName)</span>
+                                    <span aria-hidden="true">·</span>
+                                    <span><span class="nums" data-follower-count>@user.FollowerCount</span> followers</span>
+                                </p>
+                                @if (!string.IsNullOrWhiteSpace(user.Bio))
+                                {
+                                    <p class="user-card-bio">@user.Bio</p>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="user-card-cta">
+                            @if (user.IsMe)
+                            {
+                                <a class="btn btn-ghost btn-sm" asp-controller="Profile" asp-action="Edit">Edit profile</a>
+                            }
+                            else
+                            {
+                                @* Follow / unfollow toggle form — site.js AJAX interceptor data-follow-form par chalta hai *@
+                                <form asp-controller="Follow" asp-action="Toggle" method="post" data-follow-form>
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="username" value="@user.UserName" />
+                                    <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+
+                                    <button type="submit"
+                                            class="btn btn-sm btn-follow @(user.IsFollowing ? "is-following" : "btn-primary")"
+                                            aria-pressed="@(user.IsFollowing ? "true" : "false")">
+                                        <span data-follow-label>@(user.IsFollowing ? "Following" : "Follow")</span>
+                                    </button>
+                                </form>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    }
+    else if (Model.IsPostsTab)
+    {
+        @if (Model.PostsFeed == null || Model.PostsFeed.IsEmpty)
+        {
+            <div class="empty">
+                <p class="empty-title">No posts found</p>
+                <p class="empty-text">No posts matched "@Model.Query". Try searching with different keywords.</p>
+            </div>
+        }
+        else
+        {
+            <div class="feed">
+                @foreach (var post in Model.PostsFeed.Posts)
+                {
+                    <partial name="_Post" model="post" />
+                }
+            </div>
+
+            @if (Model.PostsFeed.HasOlder || Model.PostsFeed.HasNewer)
+            {
+                <nav class="pager" aria-label="Search posts pages">
+                    @if (Model.PostsFeed.HasNewer)
+                    {
+                        <a class="btn btn-ghost btn-sm" asp-controller="Search" asp-action="Index"
+                           asp-route-q="@Model.Query" asp-route-tab="posts"
+                           asp-route-page="@(Model.PostsFeed.Page - 1)">← Newer</a>
+                    }
+
+                    <span class="pager-pos nums">Page @Model.PostsFeed.Page</span>
+
+                    @if (Model.PostsFeed.HasOlder)
+                    {
+                        <a class="btn btn-ghost btn-sm" asp-controller="Search" asp-action="Index"
+                           asp-route-q="@Model.Query" asp-route-tab="posts"
+                           asp-route-page="@(Model.PostsFeed.Page + 1)">Older →</a>
+                    }
+                </nav>
+            }
+
+            @if (!Model.PostsFeed.HasOlder)
+            {
+                <div class="feed-end">That's everything matching your search</div>
+            }
+        }
+    }
+}
+else
+{
+    @* Initial search prompt state — search shuru karne se pehle *@
+    <div class="empty search-prompt">
+        <p class="empty-title">Search SocialApp</p>
+        <p class="empty-text">Find friends and colleagues by name or @@handle, or discover posts with specific topics and keywords.</p>
+    </div>
+}

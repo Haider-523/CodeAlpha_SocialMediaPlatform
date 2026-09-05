@@ -1,0 +1,115 @@
+@model SocialApp.Models.ViewModels.EditProfileViewModel
+@{
+    ViewData["Title"] = "Edit profile";
+}
+
+<div class="page-head">
+    <div>
+        <h1>Edit profile</h1>
+        <p class="page-sub">@@@(Model.UserName)</p>
+    </div>
+</div>
+
+@* enctype zaroori hai — iske bina file browser se bhejti hi nahi, aur model.Avatar
+   chup-chaap null aata hai. Ye upload ka sab se aam bug hai. *@
+<form class="card" asp-controller="Profile" asp-action="Edit"
+      method="post" enctype="multipart/form-data" novalidate>
+
+    <div asp-validation-summary="ModelOnly" class="alert alert-error" role="alert"></div>
+
+    <div class="avatar-picker">
+        <span class="avatar avatar-lg" aria-hidden="true" id="avatarPreview">
+            @if (!string.IsNullOrEmpty(Model.CurrentAvatarUrl))
+            {
+                <img src="@Model.CurrentAvatarUrl" alt="" width="88" height="88" id="avatarPreviewImg" />
+            }
+            else
+            {
+                <span id="avatarPreviewInitial">@(string.IsNullOrWhiteSpace(Model.DisplayName) ? "?" : Model.DisplayName.Trim()[..1].ToUpperInvariant())</span>
+            }
+        </span>
+
+        <div class="avatar-picker-body">
+            <label class="label" asp-for="Avatar"></label>
+
+            @* accept= sirf file dialog ko filter karta hai — asli check server par
+               decoder se hota hai. Client-side filter security nahi, suhoolat hai. *@
+            <input class="input" asp-for="Avatar" type="file"
+                   accept="image/jpeg,image/png,image/webp" />
+
+            <p class="small faint">
+                JPG, PNG or WebP · up to 4 MB.
+                We crop it to a square from the centre, so you don't have to.
+            </p>
+            <span class="field-error" asp-validation-for="Avatar"></span>
+
+            @if (!string.IsNullOrEmpty(Model.CurrentAvatarUrl))
+            {
+                <label class="check-row">
+                    <input asp-for="RemoveAvatar" type="checkbox" />
+                    <span>Remove current photo</span>
+                </label>
+            }
+        </div>
+    </div>
+
+    <div class="field">
+        <label class="label" asp-for="DisplayName"></label>
+        <input class="input" asp-for="DisplayName" maxlength="50" autocomplete="name" />
+        <span class="field-error" asp-validation-for="DisplayName"></span>
+    </div>
+
+    <div class="field">
+        <label class="label" asp-for="Bio"></label>
+        <textarea class="textarea" asp-for="Bio" maxlength="250"
+                  placeholder="A line or two about you."></textarea>
+        <div class="row-between">
+            <span class="field-error" asp-validation-for="Bio"></span>
+            @* FIX #9 — X sirf limit paar hone par chillata hai. Ye counter shuru se
+               hi mojood hai, to surprise nahi hoti. site.js isse khud bharta hai. *@
+            <span class="char-count" data-count-for="Bio"></span>
+        </div>
+    </div>
+
+    <div class="row-between">
+        <a class="btn btn-quiet" asp-controller="Profile" asp-action="Me">Cancel</a>
+        <button type="submit" class="btn btn-primary">Save changes</button>
+    </div>
+</form>
+
+@section Scripts {
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        // Chuni hui file ka foran preview — upload se pehle pata chal jata hai ke
+        // sahi tasveer chuni hai. URL.createObjectURL network hit nahi karta.
+        (function () {
+            var input = document.getElementById("Avatar");
+            var holder = document.getElementById("avatarPreview");
+            if (!input || !holder) return;
+
+            var lastUrl = null;
+
+            input.addEventListener("change", function () {
+                var file = input.files && input.files[0];
+                if (!file) return;
+
+                if (lastUrl) URL.revokeObjectURL(lastUrl);   // memory leak se bachao
+                lastUrl = URL.createObjectURL(file);
+
+                var img = document.getElementById("avatarPreviewImg");
+                if (!img) {
+                    img = document.createElement("img");
+                    img.id = "avatarPreviewImg";
+                    img.alt = "";
+                    img.width = 88;
+                    img.height = 88;
+                    holder.textContent = "";
+                    holder.appendChild(img);
+                }
+                img.src = lastUrl;
+            });
+        })();
+    </script>
+}

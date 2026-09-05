@@ -1,0 +1,140 @@
+@model SocialApp.Models.ViewModels.FollowListViewModel
+@{
+    ViewData["Title"] = Model.IsFollowersTab
+        ? $"{Model.TargetDisplayName}'s Followers"
+        : $"{Model.TargetDisplayName} is Following";
+}
+
+@if (TempData["Flash"] is string flash)
+{
+    <div class="alert alert-ok" role="status">@flash</div>
+}
+
+<div class="page-head">
+    <div>
+        <a class="back-link" asp-controller="Profile" asp-action="Index" asp-route-username="@Model.TargetUserName">
+            ← Back to @Model.TargetDisplayName
+        </a>
+        <h1>@(Model.IsFollowersTab ? "Followers" : "Following")</h1>
+        <p class="page-sub">@@@Model.TargetUserName</p>
+    </div>
+
+    <div class="segmented follow-tabs" role="tablist" aria-label="Followers and Following">
+        <a class="segmented-item @(Model.IsFollowersTab ? "is-active" : "")" role="tab"
+           aria-selected="@(Model.IsFollowersTab ? "true" : "false")"
+           asp-controller="Profile" asp-action="Followers" asp-route-username="@Model.TargetUserName">
+            Followers <span class="nums">(@Model.FollowerCount)</span>
+        </a>
+        <a class="segmented-item @(Model.IsFollowingTab ? "is-active" : "")" role="tab"
+           aria-selected="@(Model.IsFollowingTab ? "true" : "false")"
+           asp-controller="Profile" asp-action="Following" asp-route-username="@Model.TargetUserName">
+            Following <span class="nums">(@Model.FollowingCount)</span>
+        </a>
+    </div>
+</div>
+
+@if (Model.IsEmpty)
+{
+    <div class="empty">
+        <p class="empty-title">
+            @(Model.IsFollowersTab ? "No followers yet" : "Not following anyone yet")
+        </p>
+        <p class="empty-text">
+            @(Model.IsFollowersTab
+                ? $"{Model.TargetDisplayName} doesn't have any followers yet."
+                : $"{Model.TargetDisplayName} isn't following any other accounts yet.")
+        </p>
+        <a class="btn btn-primary" asp-controller="Explore" asp-action="Index">
+            Explore users
+        </a>
+    </div>
+}
+else
+{
+    <div class="user-cards">
+        @foreach (var user in Model.Users)
+        {
+            <div class="card user-card">
+                <div class="user-card-main">
+                    <a class="avatar avatar-md" asp-controller="Profile" asp-action="Index" asp-route-username="@user.UserName" aria-hidden="true">
+                        @if (!string.IsNullOrEmpty(user.AvatarUrl))
+                        {
+                            <img src="@user.AvatarUrl" alt="" width="44" height="44" />
+                        }
+                        else
+                        {
+                            @user.Initial
+                        }
+                    </a>
+
+                    <div class="user-card-info">
+                        <a class="user-card-name" asp-controller="Profile" asp-action="Index" asp-route-username="@user.UserName">
+                            @user.DisplayName
+                        </a>
+                        <p class="user-card-handle">
+                            <span>@@@(user.UserName)</span>
+                            <span aria-hidden="true">·</span>
+                            <span><span class="nums" data-follower-count>@user.FollowerCount</span> followers</span>
+                        </p>
+                        @if (!string.IsNullOrWhiteSpace(user.Bio))
+                        {
+                            <p class="user-card-bio">@user.Bio</p>
+                        }
+                    </div>
+                </div>
+
+                <div class="user-card-cta">
+                    @if (user.IsMe)
+                    {
+                        <a class="btn btn-ghost btn-sm" asp-controller="Profile" asp-action="Edit">Edit profile</a>
+                    }
+                    else
+                    {
+                        @* Follow / unfollow toggle form — site.js AJAX interceptor data-follow-form par chalta hai *@
+                        <form asp-controller="Follow" asp-action="Toggle" method="post" data-follow-form>
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="username" value="@user.UserName" />
+                            <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+
+                            <button type="submit"
+                                    class="btn btn-sm btn-follow @(user.IsFollowing ? "is-following" : "btn-primary")"
+                                    aria-pressed="@(user.IsFollowing ? "true" : "false")">
+                                <span data-follow-label>@(user.IsFollowing ? "Following" : "Follow")</span>
+                            </button>
+                        </form>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+
+    @if (Model.HasOlder || Model.HasNewer)
+    {
+        <nav class="pager" aria-label="Page navigation">
+            @if (Model.HasNewer)
+            {
+                <a class="btn btn-ghost btn-sm"
+                   asp-controller="Profile"
+                   asp-action="@(Model.IsFollowersTab ? "Followers" : "Following")"
+                   asp-route-username="@Model.TargetUserName"
+                   asp-route-page="@(Model.Page - 1)">← Newer</a>
+            }
+
+            <span class="pager-pos nums">Page @Model.Page</span>
+
+            @if (Model.HasOlder)
+            {
+                <a class="btn btn-ghost btn-sm"
+                   asp-controller="Profile"
+                   asp-action="@(Model.IsFollowersTab ? "Followers" : "Following")"
+                   asp-route-username="@Model.TargetUserName"
+                   asp-route-page="@(Model.Page + 1)">Older →</a>
+            }
+        </nav>
+    }
+
+    @if (!Model.HasOlder)
+    {
+        <div class="feed-end">That's everyone</div>
+    }
+}

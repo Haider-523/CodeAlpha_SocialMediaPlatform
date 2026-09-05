@@ -1,0 +1,61 @@
+@model SocialApp.Models.ViewModels.RegisterConfirmationViewModel
+@{
+    ViewData["Title"] = "Check your inbox";
+}
+
+<div class="auth-wrap">
+    <div class="auth-card">
+        <div class="auth-head">
+            <h1>Check your inbox</h1>
+            <p>
+                We sent a confirmation link to <span class="strong">@Model.Email</span>.
+                Open it to activate your account.
+            </p>
+        </div>
+
+        @if (!Model.EmailSent)
+        {
+            @* SMTP fail hua. User ko chup-chaap intezaar karwana sab se bura option hai —
+               woh 10 minute inbox refresh karta rehta. Saaf bata dete hain. *@
+            <div class="alert alert-error" role="alert">
+                Your account was created, but we couldn't send the email just now.
+                Try requesting a new link below.
+            </div>
+        }
+        else
+        {
+            <p class="small muted">
+                Nothing after a minute? Check your spam folder — the first mail from a
+                new sender often lands there.
+            </p>
+        }
+
+        @* ── Sirf Development mein: controller ne ye sirf tab bhare hain jab
+             IsDevelopment() true tha, is liye production mein ye block khali rehta hai. ── *@
+        @if (Model.DevEmailError is not null)
+        {
+            <div class="dev-note">
+                <span class="dev-note-tag">Dev only</span>
+                <strong>SMTP failed</strong>
+                <code>@Model.DevEmailError</code>
+            </div>
+        }
+
+        @if (Model.DevConfirmUrl is not null)
+        {
+            <div class="dev-note">
+                <span class="dev-note-tag">Dev only</span>
+                <strong>Confirmation link</strong>
+                <a href="@Model.DevConfirmUrl">Confirm this account now</a>
+            </div>
+        }
+
+        <a asp-controller="Account" asp-action="ResendConfirmation"
+           class="btn btn-ghost btn-block">Send the link again</a>
+
+        <div class="auth-alt">
+            Already confirmed?
+            <a asp-controller="Account" asp-action="Login">Log in</a>
+        </div>
+    </div>
+</div>

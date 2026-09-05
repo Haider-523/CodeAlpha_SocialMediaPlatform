@@ -1,25 +1,33 @@
-﻿@model ErrorViewModel
+@model ErrorViewModel
 @{
-    ViewData["Title"] = "Error";
+    ViewData["Title"] = Model.Title;
 }
 
-<h1 class="text-danger">Error.</h1>
-<h2 class="text-danger">An error occurred while processing your request.</h2>
+<div class="auth-wrap">
+    <div class="card auth-card error-card">
+        <div class="error-badge">
+            <span class="error-code nums">@(Model.StatusCode.HasValue ? Model.StatusCode.Value.ToString() : "Error")</span>
+        </div>
 
-@if (Model.ShowRequestId)
-{
-    <p>
-        <strong>Request ID:</strong> <code>@Model.RequestId</code>
-    </p>
-}
+        <h1 class="error-title">@Model.Title</h1>
+        <p class="error-text">@Model.Message</p>
 
-<h3>Development Mode</h3>
-<p>
-    Swapping to <strong>Development</strong> environment will display more detailed information about the error that occurred.
-</p>
-<p>
-    <strong>The Development environment shouldn't be enabled for deployed applications.</strong>
-    It can result in displaying sensitive information from exceptions to end users.
-    For local debugging, enable the <strong>Development</strong> environment by setting the <strong>ASPNETCORE_ENVIRONMENT</strong> environment variable to <strong>Development</strong>
-    and restarting the app.
-</p>
+        @if (Model.ShowRequestId)
+        {
+            <div class="dev-note">
+                <span class="dev-note-tag">Diagnostics</span>
+                <strong>Request ID</strong>
+                <code>@Model.RequestId</code>
+            </div>
+        }
+
+        <div class="error-actions">
+            <a class="btn btn-primary" asp-controller="Home" asp-action="Index">
+                Return to Home
+            </a>
+            <a class="btn btn-ghost" asp-controller="Explore" asp-action="Index">
+                Explore Feed
+            </a>
+        </div>
+    </div>
+</div>

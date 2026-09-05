@@ -1,0 +1,124 @@
+@model SocialApp.Models.ViewModels.PostDetailViewModel
+
+@*
+    /p/12 — post ka apna page.
+
+    Kyun alag page (feed ke andar comments kholne ke bajaye):
+      • Post ka ek asli, share karne wala URL ban jata hai.
+      • Feed ka HTML chhota rehta hai — 10 posts ke saath 200 comments load nahi hote.
+      • Back button theek chalta hai. Modal khol kar comments dikhane wale apps
+        (Instagram web) mein back dabao to poora feed hi band ho jata hai.
+*@
+
+@if (TempData["Flash"] is string flash)
+{
+    <div class="alert alert-ok" role="status">@flash</div>
+}
+
+<div class="page-head">
+    @* Wapsi ka raasta hamesha saaf. Browser ka back button kaafi nahi: user is
+       page par seedhe link se bhi aa sakta hai, jahan back ka koi matlab nahi. *@
+    <a class="btn btn-quiet btn-sm" asp-controller="Home" asp-action="Index">
+        <span aria-hidden="true">←</span> Back to feed
+    </a>
+</div>
+
+<partial name="_Post" model="Model.Post" />
+
+<section class="comments card" id="comments" aria-labelledby="commentsTitle">
+
+    @{
+        var count = Model.Comments.Count;
+        var heading = count == 0 ? "No comments yet" : count == 1 ? "1 comment" : $"{count} comments";
+    }
+    <h2 class="comments-title" id="commentsTitle">@heading</h2>
+
+    @* Form comments se PEHLE hai, jaan bujh kar: 40 comments ke baad form dhoondna
+       parta hai. Chhoti si baat hai magar Facebook par yehi sabse zyada khalta hai. *@
+    <form class="composer composer-comment" asp-controller="Comments" asp-action="Create" method="post">
+        <input type="hidden" name="PostId" value="@Model.Post.Id" />
+
+        <span class="avatar avatar-sm" aria-hidden="true">
+            @if (!string.IsNullOrEmpty(Model.MyAvatarUrl))
+            {
+                <img src="@Model.MyAvatarUrl" alt="" width="34" height="34" />
+            }
+            else
+            {
+                @Model.MyInitial
+            }
+        </span>
+
+        <div class="composer-body">
+            <label class="sr-only" for="CommentContent">Write a comment</label>
+            <textarea id="CommentContent" name="Content" class="composer-input composer-input-sm"
+                      maxlength="300" required rows="2"
+                      placeholder="Write a comment…">@Model.Composer.Content</textarea>
+
+            @* asp-validation-for is page par nahi chal sakta: model PostDetailViewModel
+               hai magar ModelState ki keys "Content"/"PostId" hain (form unprefixed
+               naam bhejta hai taake CreateCommentViewModel par seedha bind ho). *@
+            @Html.ValidationMessage("Content", new { @class = "field-error" })
+            @* Model-level error (jaise "couldn't save") — ValidationSummary(true)
+               sirf wohi dikhata hai, field errors dobara nahi. *@
+            @Html.ValidationSummary(true, "", new { @class = "field-error" })
+
+            <div class="composer-foot">
+                <span class="char-count" data-count-for="CommentContent">300</span>
+                <button type="submit" class="btn btn-primary btn-sm">Comment</button>
+            </div>
+        </div>
+    </form>
+
+    @if (Model.Comments.Count == 0)
+    {
+        <p class="comments-empty">Be the first to say something.</p>
+    }
+    else
+    {
+        <ol class="comment-list">
+            @foreach (var comment in Model.Comments)
+            {
+                <li class="comment" id="comment-@comment.Id">
+                    <a class="avatar avatar-sm" asp-controller="Profile" asp-action="Index"
+                       asp-route-username="@comment.AuthorUserName"
+                       aria-label="@comment.AuthorDisplayName's profile">
+                        @if (!string.IsNullOrEmpty(comment.AuthorAvatarUrl))
+                        {
+                            <img src="@comment.AuthorAvatarUrl" alt="" width="34" height="34" loading="lazy" />
+                        }
+                        else
+                        {
+                            <span aria-hidden="true">@comment.AuthorInitial</span>
+                        }
+                    </a>
+
+                    <div class="comment-body">
+                        <div class="comment-meta">
+                            <a class="comment-name" asp-controller="Profile" asp-action="Index"
+                               asp-route-username="@comment.AuthorUserName">@comment.AuthorDisplayName</a>
+                            <span aria-hidden="true">·</span>
+                            <time datetime="@comment.IsoTime" data-utc="@comment.IsoTime"
+                                  title="@comment.ExactTime">@comment.RelativeTime</time>
+                        </div>
+
+                        <p class="comment-text">@comment.Content</p>
+                    </div>
+
+                    @if (comment.CanDelete)
+                    {
+                        <form class="comment-del" asp-controller="Comments" asp-action="Delete" method="post">
+                            <input type="hidden" name="id" value="@comment.Id" />
+                            <button type="submit" class="action action-del"
+                                    data-confirm="Delete this comment?"
+                                    title="Delete comment">
+                                <span aria-hidden="true">🗑</span>
+                                <span class="sr-only">Delete comment</span>
+                            </button>
+                        </form>
+                    }
+                </li>
+            }
+        </ol>
+    }
+</section>
